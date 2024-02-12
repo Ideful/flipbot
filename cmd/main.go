@@ -1,14 +1,13 @@
 package main
 
 import (
+	"flag"
 	"log"
-	"time"
 
-	tgClient "github.com/Ideful/flipbot/clients/telegram"
-	"github.com/Ideful/flipbot/config"
-	event_consumer "github.com/Ideful/flipbot/consumer/event-consumer"
-	"github.com/Ideful/flipbot/events/telegram"
-	"github.com/Ideful/flipbot/storage/mongo"
+	"github.com/Ideful/flipbot/clients/telegram"
+	eventconsumer "github.com/Ideful/flipbot/event-consumer"
+	telegram2 "github.com/Ideful/flipbot/events/telegram"
+	"github.com/Ideful/flipbot/storage/files"
 )
 
 const (
@@ -18,21 +17,24 @@ const (
 )
 
 func main() {
-	cfg := config.MustLoad()
-	//storage := files.New(storagePath)
 
-	storage := mongo.New(cfg.MongoConnectionString, 10*time.Second)
+	tgClient := telegram.New(tgBotHost, mustToken())
 
-	eventsProcessor := telegram.New(
-		tgClient.New(tgBotHost, cfg.TgBotToken),
-		storage,
-	)
-
-	log.Print("service started")
-
-	consumer := event_consumer.New(eventsProcessor, eventsProcessor, batchSize)
+	eventsProcessor := telegram2.New(tgClient, files.New(storagePath))
+	consumer := eventconsumer.New(eventsProcessor, eventsProcessor, batchSize)
 
 	if err := consumer.Start(); err != nil {
-		log.Fatal("service is stopped", err)
+		log.Fatal("service stopped")
 	}
+}
+
+func mustToken() string {
+	token := flag.String("token", "", "token for bot access")
+
+	flag.Parse()
+
+	if *token == "" {
+		log.Fatal("empty token")
+	}
+	return *token
 }

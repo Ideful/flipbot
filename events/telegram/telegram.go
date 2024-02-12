@@ -1,12 +1,10 @@
-package telegram
+package telegram2
 
 import (
-	"context"
-	"errors"
+	"fmt"
 
 	"github.com/Ideful/flipbot/clients/telegram"
 	"github.com/Ideful/flipbot/events"
-	"github.com/Ideful/flipbot/lib/e"
 	"github.com/Ideful/flipbot/storage"
 )
 
@@ -18,13 +16,8 @@ type Processor struct {
 
 type Meta struct {
 	ChatID   int
-	Username string
+	UserName string
 }
-
-var (
-	ErrUnknownEventType = errors.New("unknown event type")
-	ErrUnknownMetaType  = errors.New("unknown meta type")
-)
 
 func New(client *telegram.Client, storage storage.Storage) *Processor {
 	return &Processor{
@@ -33,14 +26,13 @@ func New(client *telegram.Client, storage storage.Storage) *Processor {
 	}
 }
 
-func (p *Processor) Fetch(ctx context.Context, limit int) ([]events.Event, error) {
-	updates, err := p.tg.Updates(ctx, p.offset, limit)
+func (p *Processor) Fetch(limit int) ([]events.Event, error) {
+	updates, err := p.tg.Updates(p.offset, limit)
 	if err != nil {
-		return nil, e.Wrap("can't get events", err)
+		return nil, fmt.Errorf("error whiel gettin events:%v", err)
 	}
-
 	if len(updates) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("no updatess found")
 	}
 
 	res := make([]events.Event, 0, len(updates))
@@ -54,52 +46,49 @@ func (p *Processor) Fetch(ctx context.Context, limit int) ([]events.Event, error
 	return res, nil
 }
 
-func (p *Processor) Process(ctx context.Context, event events.Event) error {
+func (p *Processor) Process(event events.Event) error {
 	switch event.Type {
 	case events.Message:
-		return p.processMessage(ctx, event)
+		p.ProcessMessage(event)
 	default:
-		return e.Wrap("can't process message", ErrUnknownEventType)
+		return fmt.Errorf("can't process message")
 	}
+	return nil
 }
 
-func (p *Processor) processMessage(ctx context.Context, event events.Event) error {
+func (p *Processor) ProcessMessage(event events.Event) error {
 	meta, err := meta(event)
 	if err != nil {
-		return e.Wrap("can't process message", err)
+		return fmt.Errorf("can't process message")
 	}
 
-	if err := p.doCmd(ctx, event.Text, meta.ChatID, meta.Username); err != nil {
-		return e.Wrap("can't process message", err)
+	if err := p.doCmd(event.Text, meta.ChatID, meta.UserName); err != nil {
+		return fmt.Errorf("can't process message, %v", err)
 	}
-
 	return nil
 }
 
 func meta(event events.Event) (Meta, error) {
 	res, ok := event.Meta.(Meta)
 	if !ok {
-		return Meta{}, e.Wrap("can't get meta", ErrUnknownMetaType)
+		return Meta{}, fmt.Errorf("uknown meta type")
 	}
-
 	return res, nil
 }
 
-func event(upd telegram.Update) events.Event {
-	updType := fetchType(upd)
-
+func event(u telegram.Update) events.Event {
+	updType := fetchType(u)
 	res := events.Event{
-		Type: updType,
-		Text: fetchText(upd),
+		Type: int(updType),
+		Text: fetchText(u),
 	}
-
 	if updType == events.Message {
 		res.Meta = Meta{
-			ChatID:   upd.Message.Chat.ID,
-			Username: upd.Message.From.Username,
+			ChatID:   u.Message.Chat.ID,
+			UserName: u.Message.From.Username,
 		}
 	}
-
+	// chatID username
 	return res
 }
 
@@ -107,7 +96,6 @@ func fetchText(upd telegram.Update) string {
 	if upd.Message == nil {
 		return ""
 	}
-
 	return upd.Message.Text
 }
 
@@ -115,6 +103,5 @@ func fetchType(upd telegram.Update) events.Type {
 	if upd.Message == nil {
 		return events.Unknown
 	}
-
 	return events.Message
 }
