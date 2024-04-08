@@ -1,15 +1,15 @@
-package telegram2
+package telegram
 
 import (
 	"fmt"
 
-	"github.com/Ideful/flipbot/clients/telegram"
+	telegramclient "github.com/Ideful/flipbot/clients/telegram"
 	"github.com/Ideful/flipbot/events"
 	"github.com/Ideful/flipbot/storage"
 )
 
 type Processor struct {
-	tg      *telegram.Client
+	tg      *telegramclient.Client
 	offset  int
 	storage storage.Storage
 }
@@ -19,7 +19,7 @@ type Meta struct {
 	UserName string
 }
 
-func New(client *telegram.Client, storage storage.Storage) *Processor {
+func New(client *telegramclient.Client, storage storage.Storage) *Processor {
 	return &Processor{
 		tg:      client,
 		storage: storage,
@@ -31,8 +31,9 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error whiel gettin events:%v", err)
 	}
+
 	if len(updates) == 0 {
-		return nil, fmt.Errorf("no updatess found")
+		return nil, fmt.Errorf("no updates found")
 	}
 
 	res := make([]events.Event, 0, len(updates))
@@ -76,7 +77,7 @@ func meta(event events.Event) (Meta, error) {
 	return res, nil
 }
 
-func event(u telegram.Update) events.Event {
+func event(u telegramclient.Update) events.Event {
 	updType := fetchType(u)
 	res := events.Event{
 		Type: int(updType),
@@ -92,14 +93,14 @@ func event(u telegram.Update) events.Event {
 	return res
 }
 
-func fetchText(upd telegram.Update) string {
+func fetchText(upd telegramclient.Update) string {
 	if upd.Message == nil {
 		return ""
 	}
 	return upd.Message.Text
 }
 
-func fetchType(upd telegram.Update) events.Type {
+func fetchType(upd telegramclient.Update) events.Type {
 	if upd.Message == nil {
 		return events.Unknown
 	}

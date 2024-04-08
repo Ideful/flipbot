@@ -1,4 +1,4 @@
-package telegram2
+package telegram
 
 import (
 	"log"
@@ -21,7 +21,9 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 	case FlipCmd:
 		p.tg.SendMessage(chatID, flip())
 	case HelpCmd:
+		p.tg.SendMessage(chatID, msgHelp)
 	case StartCmd:
+		p.tg.SendMessage(chatID, msgHello)
 	}
 
 	// add page

@@ -1,4 +1,4 @@
-package telegram2
+package telegram
 
 const msgHelp = `/flip to flip. 
 That's all💅🏻`

@@ -1,4 +1,4 @@
-package telegram
+package telegramclient
 
 import (
 	"encoding/json"
@@ -83,5 +83,6 @@ func (c *Client) doRequest(method string, query url.Values) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("io.ReadAll error:%v", err)
 	}
+
 	return body, nil
 }

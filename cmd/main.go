@@ -4,9 +4,9 @@ import (
 	"flag"
 	"log"
 
-	"github.com/Ideful/flipbot/clients/telegram"
+	telegramclient "github.com/Ideful/flipbot/clients/telegram"
 	eventconsumer "github.com/Ideful/flipbot/event-consumer"
-	telegram2 "github.com/Ideful/flipbot/events/telegram"
+	telegram "github.com/Ideful/flipbot/events/telegram"
 	"github.com/Ideful/flipbot/storage/files"
 )
 
@@ -18,9 +18,8 @@ const (
 
 func main() {
 
-	tgClient := telegram.New(tgBotHost, mustToken())
-
-	eventsProcessor := telegram2.New(tgClient, files.New(storagePath))
+	tgClient := telegramclient.New(tgBotHost, mustToken())
+	eventsProcessor := telegram.New(tgClient, files.New(storagePath))
 	consumer := eventconsumer.New(eventsProcessor, eventsProcessor, batchSize)
 
 	if err := consumer.Start(); err != nil {
@@ -37,4 +36,5 @@ func mustToken() string {
 		log.Fatal("empty token")
 	}
 	return *token
+	return "6863789649:AAGWXCXB9W0KzRvCwVYhLgGvnzJe2t8VNvo"
 }
